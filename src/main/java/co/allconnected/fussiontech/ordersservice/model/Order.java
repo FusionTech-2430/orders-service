@@ -1,13 +1,12 @@
 package co.allconnected.fussiontech.ordersservice.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -33,5 +32,8 @@ public class Order {
 
     @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
     private String status;
+
+    @OneToMany(mappedBy = "order")
+    private Set<ProductOrder> productOrders = new LinkedHashSet<>();
 
 }
