@@ -7,10 +7,9 @@ import co.allconnected.fussiontech.ordersservice.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -29,6 +28,25 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.CREATED).body(order);
         }
         catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderDTO> getOrder(@PathVariable UUID id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(orderService.getOrderByUUID(id));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<OrderDTO[]> getOrders() {
+        try {
+            OrderDTO[] orders = orderService.getOrders();
+            return ResponseEntity.status(HttpStatus.OK).body(orders);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
