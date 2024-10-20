@@ -2,6 +2,7 @@ package co.allconnected.fussiontech.ordersservice.services;
 
 import co.allconnected.fussiontech.ordersservice.dtos.OrderCreateDTO;
 import co.allconnected.fussiontech.ordersservice.dtos.OrderDTO;
+import co.allconnected.fussiontech.ordersservice.dtos.ProductDTO;
 import co.allconnected.fussiontech.ordersservice.model.Order;
 import co.allconnected.fussiontech.ordersservice.model.Product;
 import co.allconnected.fussiontech.ordersservice.model.ProductOrder;
@@ -115,5 +116,22 @@ public class OrderService {
             throw new OperationException(404, "Order or Product not found in the system");
         }
     }
+
+    public void deleteOrder(UUID id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        if (orderOptional.isPresent()) {
+            Order order = orderOptional.get();
+
+            // Eliminar los productos de la orden
+            for (ProductOrder productOrder : order.getProductOrders()) {
+                productOrderRepository.delete(productOrder);
+            }
+
+            orderRepository.delete(order);
+        } else {
+            throw new OperationException(404, "Order not found");
+        }
+    }
+
 }
 

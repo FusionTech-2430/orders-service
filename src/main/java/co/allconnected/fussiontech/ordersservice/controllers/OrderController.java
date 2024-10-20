@@ -2,6 +2,7 @@ package co.allconnected.fussiontech.ordersservice.controllers;
 
 import co.allconnected.fussiontech.ordersservice.dtos.OrderCreateDTO;
 import co.allconnected.fussiontech.ordersservice.dtos.OrderDTO;
+import co.allconnected.fussiontech.ordersservice.dtos.ProductDTO;
 import co.allconnected.fussiontech.ordersservice.dtos.Response;
 import co.allconnected.fussiontech.ordersservice.services.OrderService;
 import co.allconnected.fussiontech.ordersservice.utils.OperationException;
@@ -51,6 +52,19 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteOrder(@PathVariable UUID id) {
+        try {
+            orderService.deleteOrder(id);
+            return ResponseEntity.status(HttpStatus.OK).body(new Response(HttpStatus.OK.value(), "Order deleted"));
+        } catch (OperationException e) {
+            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
     @PostMapping("/{id_order}/products/{id_product}")
     public ResponseEntity<?> addProductToOrder(@PathVariable UUID id_order, @PathVariable Integer id_product, @RequestParam Integer quantity) {
