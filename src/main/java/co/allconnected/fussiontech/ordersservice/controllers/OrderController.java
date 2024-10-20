@@ -38,7 +38,7 @@ public class OrderController {
     }
 
     /*
-    GET METHODS
+    GET METHODS: By id, all orders, orders by user
      */
     @GetMapping("/{id}")
     public ResponseEntity<OrderDTO> getOrder(@PathVariable UUID id) {
@@ -53,6 +53,16 @@ public class OrderController {
     public ResponseEntity<OrderDTO[]> getOrders() {
         try {
             OrderDTO[] orders = orderService.getOrders();
+            return ResponseEntity.status(HttpStatus.OK).body(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{id_user}/user")
+    public ResponseEntity<OrderDTO[]> getOrdersByUser(@PathVariable String id_user) {
+        try {
+            OrderDTO[] orders = orderService.getOrdersByUser(id_user);
             return ResponseEntity.status(HttpStatus.OK).body(orders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

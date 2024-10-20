@@ -47,6 +47,59 @@ public class OrderService {
                 .toArray(OrderDTO[]::new);
     }
 
+    public OrderDTO [] getOrdersByUser(String idUser) {
+        return orderRepository.findAll().stream()
+                .filter(order -> order.getIdUser().equals(idUser))
+                .map(OrderDTO::new)
+                .toArray(OrderDTO[]::new);
+    }
+
+    public OrderDTO markOrderAsConfirmed(UUID id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+
+        if (orderOptional.isPresent()) {
+            Order order = orderOptional.get();
+
+            for (ProductOrder productOrder : order.getProductOrders()) {
+                Product product = productOrder.getProduct();
+                if (productOrder.getQuantity() > product.getStock()) {
+                    throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
+                }
+            }
+
+            for (ProductOrder productOrder : order.getProductOrders()) {
+                Product product = productOrder.getProduct();
+                int newStock = product.getStock() - productOrder.getQuantity();
+
+                if (newStock < 0) {
+                    throw new OperationException(500, "Error: Stock cannot be negative for product: " + product.getName());
+                }
+
+                product.setStock(newStock);
+                productRepository.save(product);
+            }
+            order.setStatus("confirmed");
+
+            return new OrderDTO(orderRepository.save(order));
+        } else {
+            throw new OperationException(404, "Order not found");
+        }
+    }
+
+    public OrderDTO markOrderAsDelivered(UUID id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        if (orderOptional.isPresent()) {
+            Order order = orderOptional.get();
+
+            // Update status and delivery date
+            order.setStatus("delivered");
+            order.setDeliveryDate(Instant.now());
+            return new OrderDTO(orderRepository.save(order));
+        } else {
+            throw new OperationException(404, "Order not found");
+        }
+    }
+
     public void deleteOrder(UUID id) {
         Optional<Order> orderOptional = orderRepository.findById(id);
         if (orderOptional.isPresent()) {
@@ -144,53 +197,5 @@ public class OrderService {
             throw new OperationException(404, "Order or Product not found in the system");
         }
     }
-
-    public OrderDTO markOrderAsConfirmed(UUID id) {
-        Optional<Order> orderOptional = orderRepository.findById(id);
-
-        if (orderOptional.isPresent()) {
-            Order order = orderOptional.get();
-
-            for (ProductOrder productOrder : order.getProductOrders()) {
-                Product product = productOrder.getProduct();
-                if (productOrder.getQuantity() > product.getStock()) {
-                    throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
-                }
-            }
-
-            for (ProductOrder productOrder : order.getProductOrders()) {
-                Product product = productOrder.getProduct();
-                int newStock = product.getStock() - productOrder.getQuantity();
-
-                if (newStock < 0) {
-                    throw new OperationException(500, "Error: Stock cannot be negative for product: " + product.getName());
-                }
-
-                product.setStock(newStock);
-                productRepository.save(product);
-            }
-            order.setStatus("confirmed");
-
-            return new OrderDTO(orderRepository.save(order));
-        } else {
-            throw new OperationException(404, "Order not found");
-        }
-    }
-
-    public OrderDTO markOrderAsDelivered(UUID id) {
-        Optional<Order> orderOptional = orderRepository.findById(id);
-        if (orderOptional.isPresent()) {
-            Order order = orderOptional.get();
-
-            // Update status and delivery date
-            order.setStatus("delivered");
-            order.setDeliveryDate(Instant.now());
-            return new OrderDTO(orderRepository.save(order));
-        } else {
-            throw new OperationException(404, "Order not found");
-        }
-    }
-
-
 }
 
