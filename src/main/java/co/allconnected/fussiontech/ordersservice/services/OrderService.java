@@ -13,6 +13,7 @@ import co.allconnected.fussiontech.ordersservice.utils.OperationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -170,6 +171,20 @@ public class OrderService {
             }
             order.setStatus("confirmed");
 
+            return new OrderDTO(orderRepository.save(order));
+        } else {
+            throw new OperationException(404, "Order not found");
+        }
+    }
+
+    public OrderDTO markOrderAsDelivered(UUID id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        if (orderOptional.isPresent()) {
+            Order order = orderOptional.get();
+
+            // Update status and delivery date
+            order.setStatus("delivered");
+            order.setDeliveryDate(Instant.now());
             return new OrderDTO(orderRepository.save(order));
         } else {
             throw new OperationException(404, "Order not found");

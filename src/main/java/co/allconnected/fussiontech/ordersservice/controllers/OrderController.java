@@ -23,6 +23,9 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    /*
+    CREATE ORDER
+     */
     @PostMapping
     public ResponseEntity <OrderDTO> createOrder (@RequestBody OrderCreateDTO orderDTO) {
         try{
@@ -34,6 +37,9 @@ public class OrderController {
         }
     }
 
+    /*
+    GET METHODS
+     */
     @GetMapping("/{id}")
     public ResponseEntity<OrderDTO> getOrder(@PathVariable UUID id) {
         try {
@@ -53,11 +59,14 @@ public class OrderController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteOrder(@PathVariable UUID id) {
+    /*
+    ENDPOINTS FOR UPDATE STATUS AND VALUE OF ORDERS - PRODUCTS IF NEEDED
+     */
+    @PutMapping("/{id}/confirmed")
+    public ResponseEntity<?> markOrderAsConfirmed(@PathVariable UUID id) {
         try {
-            orderService.deleteOrder(id);
-            return ResponseEntity.status(HttpStatus.OK).body(new Response(HttpStatus.OK.value(), "Order deleted"));
+            OrderDTO order = orderService.markOrderAsConfirmed(id);
+            return ResponseEntity.status(HttpStatus.OK).body(order);
         } catch (OperationException e) {
             return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
         } catch (Exception e) {
@@ -65,6 +74,36 @@ public class OrderController {
         }
     }
 
+    @PutMapping("/{id}/delivered")
+    public ResponseEntity<?> markOrderAsDelivered(@PathVariable UUID id) {
+        try {
+            OrderDTO order = orderService.markOrderAsDelivered(id);
+            return ResponseEntity.status(HttpStatus.OK).body(order);
+        } catch (OperationException e) {
+            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+   /*
+   DELETE ORDER
+    */
+   @DeleteMapping("/{id}")
+   public ResponseEntity<?> deleteOrder(@PathVariable UUID id) {
+       try {
+           orderService.deleteOrder(id);
+           return ResponseEntity.status(HttpStatus.OK).body(new Response(HttpStatus.OK.value(), "Order deleted"));
+       } catch (OperationException e) {
+           return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+       } catch (Exception e) {
+           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+       }
+   }
+
+    /*
+    ENDPOINTS FOR ADDING AND DELETING PRODUCTS FROM ORDERS
+     */
 
     @PostMapping("/{id_order}/products/{id_product}")
     public ResponseEntity<?> addProductToOrder(@PathVariable UUID id_order, @PathVariable Integer id_product, @RequestParam Integer quantity) {
@@ -97,15 +136,4 @@ public class OrderController {
         }
     }
 
-    @PutMapping("/{id}/confirmed")
-    public ResponseEntity<?> markOrderAsConfirmed(@PathVariable UUID id) {
-        try {
-            OrderDTO order = orderService.markOrderAsConfirmed(id);
-            return ResponseEntity.status(HttpStatus.OK).body(order);
-        } catch (OperationException e) {
-            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
 }
