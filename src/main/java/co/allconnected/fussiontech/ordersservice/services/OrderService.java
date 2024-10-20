@@ -46,6 +46,22 @@ public class OrderService {
                 .toArray(OrderDTO[]::new);
     }
 
+    public void deleteOrder(UUID id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        if (orderOptional.isPresent()) {
+            Order order = orderOptional.get();
+
+            // Eliminar los productos de la orden
+            for (ProductOrder productOrder : order.getProductOrders()) {
+                productOrderRepository.delete(productOrder);
+            }
+
+            orderRepository.delete(order);
+        } else {
+            throw new OperationException(404, "Order not found");
+        }
+    }
+
     public OrderDTO addProductToOrder(UUID orderId, Integer productId, Integer quantity) {
         Optional<Order> orderOptional = orderRepository.findById(orderId);
         Optional<Product> productOptional = productRepository.findById(productId);
@@ -59,6 +75,13 @@ public class OrderService {
 
             if (existingProductOrder.isPresent()) {
                 ProductOrder productOrder = existingProductOrder.get();
+                System.out.println("Stock: " + product.getStock());
+                System.out.println("Cantidad: " + quantity);
+
+                // Verify the stock of the product
+                if (productOrder.getQuantity() > product.getStock()) {
+                    throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
+                }
 
                 // For update the total is necessary to sustract the previous subtotal of the combination of product and quantity in the order
                 double previousSubtotal = productOrder.getQuantity() * product.getPrice();
@@ -73,6 +96,10 @@ public class OrderService {
 
                 productOrderRepository.save(productOrder);
                 orderRepository.save(order);
+
+                // Update the stock of the product
+                product.setStock(product.getStock() - quantity);
+                productRepository.save(product);
             } else {
                 ProductOrder productOrder = new ProductOrder(order, product, quantity);
                 double newTotal = order.getTotal() + productOrder.getSubtotal();
@@ -117,21 +144,38 @@ public class OrderService {
         }
     }
 
-    public void deleteOrder(UUID id) {
+    public OrderDTO markOrderAsConfirmed(UUID id) {
         Optional<Order> orderOptional = orderRepository.findById(id);
+
         if (orderOptional.isPresent()) {
             Order order = orderOptional.get();
 
-            // Eliminar los productos de la orden
             for (ProductOrder productOrder : order.getProductOrders()) {
-                productOrderRepository.delete(productOrder);
+                Product product = productOrder.getProduct();
+                if (productOrder.getQuantity() > product.getStock()) {
+                    throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
+                }
             }
 
-            orderRepository.delete(order);
+            for (ProductOrder productOrder : order.getProductOrders()) {
+                Product product = productOrder.getProduct();
+                int newStock = product.getStock() - productOrder.getQuantity();
+
+                if (newStock < 0) {
+                    throw new OperationException(500, "Error: Stock cannot be negative for product: " + product.getName());
+                }
+
+                product.setStock(newStock);
+                productRepository.save(product);
+            }
+            order.setStatus("confirmed");
+
+            return new OrderDTO(orderRepository.save(order));
         } else {
             throw new OperationException(404, "Order not found");
         }
     }
+
 
 }
 

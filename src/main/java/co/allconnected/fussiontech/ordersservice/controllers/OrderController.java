@@ -96,4 +96,16 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @PutMapping("/{id}/confirmed")
+    public ResponseEntity<?> markOrderAsConfirmed(@PathVariable UUID id) {
+        try {
+            OrderDTO order = orderService.markOrderAsConfirmed(id);
+            return ResponseEntity.status(HttpStatus.OK).body(order);
+        } catch (OperationException e) {
+            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }
