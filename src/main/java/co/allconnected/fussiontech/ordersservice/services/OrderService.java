@@ -3,12 +3,16 @@ package co.allconnected.fussiontech.ordersservice.services;
 import co.allconnected.fussiontech.ordersservice.dtos.OrderCreateDTO;
 import co.allconnected.fussiontech.ordersservice.dtos.OrderDTO;
 import co.allconnected.fussiontech.ordersservice.model.Order;
+import co.allconnected.fussiontech.ordersservice.model.Product;
+import co.allconnected.fussiontech.ordersservice.model.ProductOrder;
 import co.allconnected.fussiontech.ordersservice.repository.OrderRepository;
 import co.allconnected.fussiontech.ordersservice.repository.ProductOrderRepository;
 import co.allconnected.fussiontech.ordersservice.repository.ProductRepository;
+import co.allconnected.fussiontech.ordersservice.utils.OperationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,6 +43,48 @@ public class OrderService {
         return orderRepository.findAll().stream()
                 .map(OrderDTO::new)
                 .toArray(OrderDTO[]::new);
+    }
+
+    public OrderDTO addProductToOrder(UUID orderId, Integer productId, Integer quantity) {
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        Optional<Product> productOptional = productRepository.findById(productId);
+
+        if (orderOptional.isPresent() && productOptional.isPresent()) {
+            Order order = orderOptional.get();
+            Product product = productOptional.get();
+            Optional<ProductOrder> existingProductOrder = order.getProductOrders().stream()
+                    .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
+                    .findFirst();
+
+            if (existingProductOrder.isPresent()) {
+                ProductOrder productOrder = existingProductOrder.get();
+
+                // For update the total is necessary to sustract the previous subtotal of the combination of product and quantity in the order
+                double previousSubtotal = productOrder.getQuantity() * product.getPrice();
+                double newSubtotal = product.getPrice() * quantity;
+
+                double newTotal = order.getTotal() - previousSubtotal + newSubtotal;
+                System.out.println("Nuevo total (producto existente): " + newTotal);
+                order.setTotal(newTotal);
+
+                productOrder.setQuantity(quantity);
+                productOrder.setSubtotal(newSubtotal);
+
+                productOrderRepository.save(productOrder);
+                orderRepository.save(order);
+            } else {
+                ProductOrder productOrder = new ProductOrder(order, product, quantity);
+                double newTotal = order.getTotal() + productOrder.getSubtotal();
+                System.out.println("Nuevo total (nuevo producto): " + newTotal);
+                order.setTotal(newTotal);
+                order.getProductOrders().add(productOrder);
+                productOrderRepository.save(productOrder);
+                orderRepository.save(order);
+            }
+            return new OrderDTO(order);
+        } else {
+            throw new OperationException(404, "Order or Product not found");
+        }
     }
 }
 

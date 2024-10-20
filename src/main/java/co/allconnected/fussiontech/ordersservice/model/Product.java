@@ -41,6 +41,7 @@ public class Product {
 
     @ManyToMany
     @JoinTable(name = "product_label",
+            schema = "all_connected_products",
             joinColumns = @JoinColumn(name = "id_announcement"),
             inverseJoinColumns = @JoinColumn(name = "id_label"))
     private Set<Label> labels = new LinkedHashSet<>();

@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.Hibernate;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -14,25 +13,31 @@ import java.util.UUID;
 @Setter
 @Embeddable
 public class ProductOrderId implements Serializable {
-    private static final long serialVersionUID = 236471491802880335L;
+
     @Column(name = "id_order", nullable = false)
     private UUID idOrder;
 
     @Column(name = "id_product", nullable = false)
     private Integer idProduct;
 
+    public ProductOrderId() {}
+
+    public ProductOrderId(UUID idOrder, Integer idProduct) {
+        this.idOrder = idOrder;
+        this.idProduct = idProduct;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        ProductOrderId entity = (ProductOrderId) o;
-        return Objects.equals(this.idOrder, entity.idOrder) &&
-                Objects.equals(this.idProduct, entity.idProduct);
+        if (o == null || getClass() != o.getClass()) return false;
+        ProductOrderId that = (ProductOrderId) o;
+        return Objects.equals(idOrder, that.idOrder) &&
+                Objects.equals(idProduct, that.idProduct);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(idOrder, idProduct);
     }
-
 }

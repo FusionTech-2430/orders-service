@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.UUID;
 
 @Getter
@@ -19,15 +20,18 @@ public class OrderDTO {
     String idUser;
     Double total;
     String status;
-    String [] products;
+    HashMap<String, Integer> products;
 
-    public OrderDTO(Order order){
+    public OrderDTO(Order order) {
         this.id = order.getId();
         this.creationDate = order.getCreationDate();
         this.deliveryDate = order.getDeliveryDate();
         this.idUser = order.getIdUser();
         this.total = order.getTotal();
         this.status = order.getStatus();
-        this.products = order.getProductOrders().stream().map(ProductOrder::getProduct).toArray(String[]::new);
+        this.products = new HashMap<>();
+        for (ProductOrder productOrder : order.getProductOrders()) {
+            this.products.put(productOrder.getProduct().getName(), productOrder.getQuantity());
+        }
     }
 }

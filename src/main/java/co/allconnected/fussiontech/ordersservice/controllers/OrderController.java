@@ -2,8 +2,9 @@ package co.allconnected.fussiontech.ordersservice.controllers;
 
 import co.allconnected.fussiontech.ordersservice.dtos.OrderCreateDTO;
 import co.allconnected.fussiontech.ordersservice.dtos.OrderDTO;
-import co.allconnected.fussiontech.ordersservice.model.Order;
+import co.allconnected.fussiontech.ordersservice.dtos.Response;
 import co.allconnected.fussiontech.ordersservice.services.OrderService;
+import co.allconnected.fussiontech.ordersservice.utils.OperationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,4 +51,24 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @PostMapping("/{id_order}/products/{id_product}")
+    public ResponseEntity<?> addProductToOrder(@PathVariable UUID id_order, @PathVariable Integer id_product, @RequestParam Integer quantity) {
+        try {
+            /*
+            System.out.println("id_order: " + id_order);
+            System.out.println("id_product: " + id_product);
+            System.out.println("quantity: " + quantity);
+             */
+
+            OrderDTO order = orderService.addProductToOrder(id_order, id_product, quantity);
+            return ResponseEntity.status(HttpStatus.CREATED).body(order);
+        }
+        catch (OperationException e) {
+            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+        }catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 }
