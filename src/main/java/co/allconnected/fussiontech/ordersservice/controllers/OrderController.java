@@ -71,4 +71,15 @@ public class OrderController {
         }
     }
 
+    @DeleteMapping("/{id_order}/products/{id_product}/delete")
+    public ResponseEntity<?> deleteProductFromOrder(@PathVariable UUID id_order, @PathVariable Integer id_product) {
+        try {
+            OrderDTO order = orderService.deleteProductFromOrder(id_order, id_product);
+            return ResponseEntity.status(HttpStatus.OK).body(order);
+        } catch (OperationException e) {
+            return ResponseEntity.status(e.getCode()).body(new Response(e.getCode(), e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }

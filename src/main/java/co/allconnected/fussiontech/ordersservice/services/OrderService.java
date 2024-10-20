@@ -75,7 +75,7 @@ public class OrderService {
             } else {
                 ProductOrder productOrder = new ProductOrder(order, product, quantity);
                 double newTotal = order.getTotal() + productOrder.getSubtotal();
-                System.out.println("Nuevo total (nuevo producto): " + newTotal);
+                //System.out.println("Nuevo total (nuevo producto): " + newTotal);
                 order.setTotal(newTotal);
                 order.getProductOrders().add(productOrder);
                 productOrderRepository.save(productOrder);
@@ -84,6 +84,35 @@ public class OrderService {
             return new OrderDTO(order);
         } else {
             throw new OperationException(404, "Order or Product not found");
+        }
+    }
+
+    public OrderDTO deleteProductFromOrder(UUID orderId, Integer productId) {
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        Optional<Product> productOptional = productRepository.findById(productId);
+
+        if (orderOptional.isPresent() && productOptional.isPresent()) {
+            Order order = orderOptional.get();
+            Product product = productOptional.get();
+            Optional<ProductOrder> productOrderOptional = order.getProductOrders().stream()
+                    .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
+                    .findFirst();
+
+            if (productOrderOptional.isPresent()) {
+                ProductOrder productOrder = productOrderOptional.get();
+                double previousSubtotal = productOrder.getQuantity() * product.getPrice();
+                double newTotal = order.getTotal() - previousSubtotal;
+                //System.out.println("Nuevo total (producto eliminado): " + newTotal);
+                order.setTotal(newTotal);
+                order.getProductOrders().remove(productOrder);
+                productOrderRepository.delete(productOrder);
+                orderRepository.save(order);
+                return new OrderDTO(order);
+            } else {
+                throw new OperationException(404, "Product not found in order");
+            }
+        } else {
+            throw new OperationException(404, "Order or Product not found in the system");
         }
     }
 }
