@@ -21,6 +21,7 @@ public class Order {
         this.id = UUID.randomUUID();
         this.creationDate = Instant.now();
         this.idUser = dto.idUser();
+        this.idBusiness = dto.idBusiness();
         this.total = 0.0;
         this.status = "in_progress";
     }
@@ -42,6 +43,9 @@ public class Order {
 
     @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
     private String status;
+
+    @Column(name = "id_business", nullable = false, length = 28)
+    private UUID idBusiness;
 
     @OneToMany(mappedBy = "order")
     private Set<ProductOrder> productOrders = new LinkedHashSet<>();

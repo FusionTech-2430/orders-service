@@ -54,6 +54,13 @@ public class OrderService {
                 .toArray(OrderDTO[]::new);
     }
 
+    public OrderDTO [] getOrdersByBusiness(UUID idBusiness) {
+        return orderRepository.findAll().stream()
+                .filter(order -> order.getIdBusiness().equals(idBusiness))
+                .map(OrderDTO::new)
+                .toArray(OrderDTO[]::new);
+    }
+
     public OrderDTO markOrderAsConfirmed(UUID id) {
         Optional<Order> orderOptional = orderRepository.findById(id);
 

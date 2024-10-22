@@ -20,6 +20,7 @@ public class OrderDTO {
     String idUser;
     Double total;
     String status;
+    UUID idBusiness;
     HashMap<String, Integer> products;
 
     public OrderDTO(Order order) {
@@ -30,6 +31,7 @@ public class OrderDTO {
         this.total = order.getTotal();
         this.status = order.getStatus();
         this.products = new HashMap<>();
+        this.idBusiness = order.getIdBusiness();
         for (ProductOrder productOrder : order.getProductOrders()) {
             this.products.put(productOrder.getProduct().getName(), productOrder.getQuantity());
         }
