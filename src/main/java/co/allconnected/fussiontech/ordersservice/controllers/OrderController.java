@@ -69,6 +69,16 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/{id_business}/business")
+    public ResponseEntity<OrderDTO[]> getOrdersByBusiness(@PathVariable UUID id_business) {
+        try {
+            OrderDTO[] orders = orderService.getOrdersByBusiness(id_business);
+            return ResponseEntity.status(HttpStatus.OK).body(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     /*
     ENDPOINTS FOR UPDATE STATUS AND VALUE OF ORDERS - PRODUCTS IF NEEDED
      */

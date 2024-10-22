@@ -1,4 +1,6 @@
 package co.allconnected.fussiontech.ordersservice.dtos;
 
-public record OrderCreateDTO(String idUser) {
+import java.util.UUID;
+
+public record OrderCreateDTO(String idUser, UUID idBusiness) {
 }
