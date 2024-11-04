@@ -49,4 +49,6 @@ public class Product {
     @OneToMany(mappedBy = "product")
     private Set<ProductOrder> productOrders = new LinkedHashSet<>();
 
+    @OneToMany(mappedBy = "idProduct")
+    private Set<Rating> ratings = new LinkedHashSet<>();
 }
