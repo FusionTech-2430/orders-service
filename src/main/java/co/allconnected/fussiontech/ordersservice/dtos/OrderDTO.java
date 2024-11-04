@@ -20,8 +20,8 @@ public class OrderDTO {
     String idUser;
     Double total;
     String status;
+    HashMap<Integer, Integer> products;
     UUID idBusiness;
-    HashMap<String, Integer> products;
 
     public OrderDTO(Order order) {
         this.id = order.getId();
@@ -33,7 +33,7 @@ public class OrderDTO {
         this.products = new HashMap<>();
         this.idBusiness = order.getIdBusiness();
         for (ProductOrder productOrder : order.getProductOrders()) {
-            this.products.put(productOrder.getProduct().getName(), productOrder.getQuantity());
+            this.products.put(productOrder.getProduct().getId(), productOrder.getQuantity());
         }
     }
 }
