@@ -139,45 +139,50 @@ public class OrderService {
                     .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
                     .findFirst();
 
-            if (existingProductOrder.isPresent()) {
-                ProductOrder productOrder = existingProductOrder.get();
-                System.out.println("Stock: " + product.getStock());
-                System.out.println("Cantidad: " + quantity);
+            if (product.getStock() > 0) {
+                if (existingProductOrder.isPresent()) {
+                    ProductOrder productOrder = existingProductOrder.get();
+                    System.out.println("Stock: " + product.getStock());
+                    System.out.println("Cantidad: " + quantity);
 
-                // Verify the stock of the product
-                if (productOrder.getQuantity() > product.getStock()) {
-                    throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
+
+                    // Verify the stock of the product
+                    if (productOrder.getQuantity() > product.getStock()) {
+                        throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
+                    }
+
+                    // For update the total is necessary to sustract the previous subtotal of the combination of product and quantity in the order
+                    double previousSubtotal = productOrder.getQuantity() * product.getPrice();
+                    double newSubtotal = product.getPrice() * quantity;
+
+                    double newTotal = order.getTotal() - previousSubtotal + newSubtotal;
+                    System.out.println("Nuevo total (producto existente): " + newTotal);
+                    order.setTotal(newTotal);
+
+                    int previousQuantity = productOrder.getQuantity();
+
+                    productOrder.setQuantity(quantity);
+                    productOrder.setSubtotal(newSubtotal);
+
+                    productOrderRepository.save(productOrder);
+                    orderRepository.save(order);
+
+                    // Update the stock of the product
+                    int newStock = product.getStock() + previousQuantity - quantity;
+                    product.setStock(newStock);
+                } else {
+                    ProductOrder productOrder = new ProductOrder(order, product, quantity);
+                    double newTotal = order.getTotal() + productOrder.getSubtotal();
+                    //System.out.println("Nuevo total (nuevo producto): " + newTotal);
+                    order.setTotal(newTotal);
+                    order.getProductOrders().add(productOrder);
+                    productOrderRepository.save(productOrder);
+                    orderRepository.save(order);
                 }
-
-                // For update the total is necessary to sustract the previous subtotal of the combination of product and quantity in the order
-                double previousSubtotal = productOrder.getQuantity() * product.getPrice();
-                double newSubtotal = product.getPrice() * quantity;
-
-                double newTotal = order.getTotal() - previousSubtotal + newSubtotal;
-                System.out.println("Nuevo total (producto existente): " + newTotal);
-                order.setTotal(newTotal);
-
-                int previousQuantity = productOrder.getQuantity();
-
-                productOrder.setQuantity(quantity);
-                productOrder.setSubtotal(newSubtotal);
-
-                productOrderRepository.save(productOrder);
-                orderRepository.save(order);
-
-                // Update the stock of the product
-                int newStock = product.getStock() + previousQuantity - quantity;
-                product.setStock(newStock);
+                return new OrderDTO(order);
             } else {
-                ProductOrder productOrder = new ProductOrder(order, product, quantity);
-                double newTotal = order.getTotal() + productOrder.getSubtotal();
-                //System.out.println("Nuevo total (nuevo producto): " + newTotal);
-                order.setTotal(newTotal);
-                order.getProductOrders().add(productOrder);
-                productOrderRepository.save(productOrder);
-                orderRepository.save(order);
+                throw new OperationException(409, "The product is out of stock");
             }
-            return new OrderDTO(order);
         } else {
             throw new OperationException(404, "Order or Product not found");
         }
