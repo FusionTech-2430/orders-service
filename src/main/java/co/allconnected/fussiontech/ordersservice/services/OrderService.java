@@ -115,6 +115,11 @@ public class OrderService {
             // Eliminar los productos de la orden
             for (ProductOrder productOrder : order.getProductOrders()) {
                 productOrderRepository.delete(productOrder);
+                // Actualizar el stock de los productos
+                Product product = productOrder.getProduct();
+                int newStock = product.getStock() + productOrder.getQuantity();
+                product.setStock(newStock);
+                productRepository.save(product);
             }
 
             orderRepository.delete(order);
@@ -152,6 +157,8 @@ public class OrderService {
                 System.out.println("Nuevo total (producto existente): " + newTotal);
                 order.setTotal(newTotal);
 
+                int previousQuantity = productOrder.getQuantity();
+
                 productOrder.setQuantity(quantity);
                 productOrder.setSubtotal(newSubtotal);
 
@@ -159,8 +166,8 @@ public class OrderService {
                 orderRepository.save(order);
 
                 // Update the stock of the product
-                product.setStock(product.getStock() - quantity);
-                productRepository.save(product);
+                int newStock = product.getStock() + previousQuantity - quantity;
+                product.setStock(newStock);
             } else {
                 ProductOrder productOrder = new ProductOrder(order, product, quantity);
                 double newTotal = order.getTotal() + productOrder.getSubtotal();
