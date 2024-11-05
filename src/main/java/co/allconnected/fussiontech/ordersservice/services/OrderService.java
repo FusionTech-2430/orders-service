@@ -132,89 +132,92 @@ public class OrderService {
         Optional<Order> orderOptional = orderRepository.findById(orderId);
         Optional<Product> productOptional = productRepository.findById(productId);
 
-        if (orderOptional.isPresent() && productOptional.isPresent()) {
-            Order order = orderOptional.get();
-            Product product = productOptional.get();
-            Optional<ProductOrder> existingProductOrder = order.getProductOrders().stream()
-                    .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
-                    .findFirst();
-
-            if (product.getStock() > 0) {
-                if (existingProductOrder.isPresent()) {
-                    ProductOrder productOrder = existingProductOrder.get();
-                    System.out.println("Stock: " + product.getStock());
-                    System.out.println("Cantidad: " + quantity);
-
-
-                    // Verify the stock of the product
-                    if (productOrder.getQuantity() > product.getStock()) {
-                        throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
-                    }
-
-                    // For update the total is necessary to sustract the previous subtotal of the combination of product and quantity in the order
-                    double previousSubtotal = productOrder.getQuantity() * product.getPrice();
-                    double newSubtotal = product.getPrice() * quantity;
-
-                    double newTotal = order.getTotal() - previousSubtotal + newSubtotal;
-                    System.out.println("Nuevo total (producto existente): " + newTotal);
-                    order.setTotal(newTotal);
-
-                    int previousQuantity = productOrder.getQuantity();
-
-                    productOrder.setQuantity(quantity);
-                    productOrder.setSubtotal(newSubtotal);
-
-                    productOrderRepository.save(productOrder);
-                    orderRepository.save(order);
-
-                    // Update the stock of the product
-                    int newStock = product.getStock() + previousQuantity - quantity;
-                    product.setStock(newStock);
-                } else {
-                    ProductOrder productOrder = new ProductOrder(order, product, quantity);
-                    double newTotal = order.getTotal() + productOrder.getSubtotal();
-                    //System.out.println("Nuevo total (nuevo producto): " + newTotal);
-                    order.setTotal(newTotal);
-                    order.getProductOrders().add(productOrder);
-                    productOrderRepository.save(productOrder);
-                    orderRepository.save(order);
-                }
-                return new OrderDTO(order);
-            } else {
-                throw new OperationException(409, "The product is out of stock");
-            }
-        } else {
+        if (!orderOptional.isPresent() || !productOptional.isPresent()) {
             throw new OperationException(404, "Order or Product not found");
         }
+
+        Order order = orderOptional.get();
+        Product product = productOptional.get();
+
+        if (product.getStock() <= 0) {
+            throw new OperationException(409, "The product is out of stock");
+        }
+
+        Optional<ProductOrder> existingProductOrder = order.getProductOrders().stream()
+                .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
+                .findFirst();
+
+        if (existingProductOrder.isPresent()) {
+            ProductOrder productOrder = existingProductOrder.get();
+
+            // Verify the stock of the product
+            if (quantity > product.getStock()) {
+                throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
+            }
+
+            // Update the total and stock
+            double previousSubtotal = productOrder.getQuantity() * product.getPrice();
+            double newSubtotal = product.getPrice() * quantity;
+            order.setTotal(order.getTotal() - previousSubtotal + newSubtotal);
+
+            int previousQuantity = productOrder.getQuantity();
+            productOrder.setQuantity(quantity);
+            productOrder.setSubtotal(newSubtotal);
+
+            product.setStock(product.getStock() + previousQuantity - quantity);
+            productOrderRepository.save(productOrder);
+        } else {
+            if (quantity > product.getStock()) {
+                throw new OperationException(409, "The quantity of the product in the order is greater than the stock");
+            }
+
+            ProductOrder productOrder = new ProductOrder(order, product, quantity);
+            order.setTotal(order.getTotal() + productOrder.getSubtotal());
+            order.getProductOrders().add(productOrder);
+
+            product.setStock(product.getStock() - quantity);
+            productOrderRepository.save(productOrder);
+        }
+
+        productRepository.save(product);
+        orderRepository.save(order);
+
+        return new OrderDTO(order);
     }
 
     public OrderDTO deleteProductFromOrder(UUID orderId, Integer productId) {
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-        Optional<Product> productOptional = productRepository.findById(productId);
+        // Busca la orden y lanza excepción si no existe
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OperationException(404, "Order not found in the system"));
 
-        if (orderOptional.isPresent() && productOptional.isPresent()) {
-            Order order = orderOptional.get();
-            Product product = productOptional.get();
-            Optional<ProductOrder> productOrderOptional = order.getProductOrders().stream()
-                    .filter(productOrder -> productOrder.getProduct().getId().equals(product.getId()))
-                    .findFirst();
+        // Busca el producto y lanza excepción si no existe
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new OperationException(404, "Product not found in the system"));
 
-            if (productOrderOptional.isPresent()) {
-                ProductOrder productOrder = productOrderOptional.get();
-                double previousSubtotal = productOrder.getQuantity() * product.getPrice();
-                double newTotal = order.getTotal() - previousSubtotal;
-                //System.out.println("Nuevo total (producto eliminado): " + newTotal);
-                order.setTotal(newTotal);
-                order.getProductOrders().remove(productOrder);
-                productOrderRepository.delete(productOrder);
-                orderRepository.save(order);
-                return new OrderDTO(order);
-            } else {
-                throw new OperationException(404, "Product not found in order");
-            }
-        } else {
-            throw new OperationException(404, "Order or Product not found in the system");
-        }
+        // Busca la asociación entre el producto y la orden
+        ProductOrder productOrder = order.getProductOrders().stream()
+                .filter(po -> po.getProduct().getId().equals(product.getId()))
+                .findFirst()
+                .orElseThrow(() -> new OperationException(404, "Product not found in order"));
+
+        // Calcula el nuevo total restando el subtotal del producto que se va a eliminar
+        double previousSubtotal = productOrder.getQuantity() * product.getPrice();
+        order.setTotal(order.getTotal() - previousSubtotal);
+
+        // Incrementa el stock del producto eliminado
+        int quantityToReturn = productOrder.getQuantity();
+        product.setStock(product.getStock() + quantityToReturn);
+
+        // Actualiza el stock del producto en el repositorio
+        productRepository.save(product);
+
+        // Elimina el ProductOrder, guarda la orden actualizada, y elimina la asociación de la base de datos
+        order.getProductOrders().remove(productOrder);
+        orderRepository.save(order);
+        productOrderRepository.delete(productOrder);
+
+        return new OrderDTO(order);
     }
+
 }
 
