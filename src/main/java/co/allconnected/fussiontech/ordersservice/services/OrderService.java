@@ -66,18 +66,6 @@ public class OrderService {
                     throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
                 }
             }
-
-            for (ProductOrder productOrder : order.getProductOrders()) {
-                Product product = productOrder.getProduct();
-                int newStock = product.getStock() - productOrder.getQuantity();
-
-                if (newStock < 0) {
-                    throw new OperationException(500, "Error: Stock cannot be negative for product: " + product.getName());
-                }
-
-                product.setStock(newStock);
-                productRepository.save(product);
-            }
             order.setStatus("confirmed");
 
             return new OrderDTO(orderRepository.save(order));
