@@ -69,7 +69,7 @@ public class OrderService {
 
             for (ProductOrder productOrder : order.getProductOrders()) {
                 Product product = productOrder.getProduct();
-                if (productOrder.getQuantity() > product.getStock()) {
+                if (productOrder.getQuantity() <= 0) {
                     throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
                 }
             }
