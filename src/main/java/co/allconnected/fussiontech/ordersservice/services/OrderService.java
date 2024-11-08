@@ -204,8 +204,14 @@ public class OrderService {
         orderRepository.save(order);
         productOrderRepository.delete(productOrder);
 
+        // Verifica si la orden quedó sin productos y la elimina
+        if (order.getProductOrders().isEmpty()) {
+            orderRepository.delete(order);
+        }
+
         return new OrderDTO(order);
     }
+
 
 }
 
