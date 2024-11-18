@@ -69,21 +69,9 @@ public class OrderService {
 
             for (ProductOrder productOrder : order.getProductOrders()) {
                 Product product = productOrder.getProduct();
-                if (productOrder.getQuantity() > product.getStock()) {
+                if (productOrder.getQuantity() <= 0) {
                     throw new OperationException(409, "The quantity of the product in the order is greater than the available stock for product: " + product.getName());
                 }
-            }
-
-            for (ProductOrder productOrder : order.getProductOrders()) {
-                Product product = productOrder.getProduct();
-                int newStock = product.getStock() - productOrder.getQuantity();
-
-                if (newStock < 0) {
-                    throw new OperationException(500, "Error: Stock cannot be negative for product: " + product.getName());
-                }
-
-                product.setStock(newStock);
-                productRepository.save(product);
             }
             order.setStatus("confirmed");
 
@@ -216,8 +204,14 @@ public class OrderService {
         orderRepository.save(order);
         productOrderRepository.delete(productOrder);
 
+        // Verifica si la orden quedó sin productos y la elimina
+        if (order.getProductOrders().isEmpty()) {
+            orderRepository.delete(order);
+        }
+
         return new OrderDTO(order);
     }
+
 
 }
 
